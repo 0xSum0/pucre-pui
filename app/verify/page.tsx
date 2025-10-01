@@ -7,6 +7,7 @@ import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, RefreshCw } from "lucide-react";
+import AuthApi from "@/lib/api/authApi";
 
 //declare global {
 //  interface Window {
@@ -102,15 +103,29 @@ export default function VerifyPage() {
       }
 
       // Use the confirm method from your working code
-      await window.confirmationResult.confirm(codeString);
+      const result = await window.confirmationResult.confirm(codeString);
+      const user = result.user; // Firebase user object
+      const token = await user.getIdToken();
+
+      console.log("✅ Firebase sign-in successful:", user.uid, user.email);
+
+      const apiResponse = await AuthApi.phoneNumberSignIn({
+        uid: user.uid,
+        email: user.phoneNumber || "",
+        screenName: "",
+      });
 
       // Success
       setIsVerified(true);
       setIsVerifying(false);
 
+      const redirectUrl = `https://pui.onelink.me/kFYQ/pucreauth?uid=${encodeURIComponent(
+        user.uid
+      )}&token=${encodeURIComponent(apiResponse.token)}`;
+
       // Redirect after 3 seconds
       setTimeout(() => {
-        window.location.href = "https://pui.onelink.me/kFYQ/pucreauth";
+        window.location.href = redirectUrl;
       }, 3000);
     } catch (error: any) {
       console.error("Verification error:", error);
