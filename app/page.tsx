@@ -11,8 +11,8 @@ import { Check, ArrowRight } from "lucide-react";
 
 declare global {
   interface Window {
-    recaptchaVerifier: RecaptchaVerifier;
-    confirmationResult: import("firebase/auth").ConfirmationResult;
+    //recaptchaVerifier: RecaptchaVerifier;
+    //confirmationResult: import("firebase/auth").ConfirmationResult;
   }
 }
 
@@ -84,7 +84,7 @@ export default function PhoneNumberInput() {
       const confirmationResult = await signInWithPhoneNumber(
         auth,
         fullPhone,
-        window.recaptchaVerifier
+        window.recaptchaVerifier!
       );
       window.confirmationResult = confirmationResult;
 

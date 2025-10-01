@@ -1,8 +1,10 @@
+import type { RecaptchaVerifier, ConfirmationResult } from "firebase/auth";
+
 declare global {
   interface Window {
-    recaptchaVerifier: any;
+    recaptchaVerifier: RecaptchaVerifier | null;
     recaptchaWidgetId: any;
-    confirmationResult: any;
+    confirmationResult: ConfirmationResult | null;
     grecaptcha: any;
   }
 }

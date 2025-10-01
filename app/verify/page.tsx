@@ -8,11 +8,11 @@ import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Check, RefreshCw } from 'lucide-react';
 
-declare global {
-  interface Window {
-    confirmationResult: import("firebase/auth").ConfirmationResult;
-  }
-}
+//declare global {
+//  interface Window {
+//    confirmationResult: import("firebase/auth").ConfirmationResult;
+//  }
+//}
 
 export default function VerifyPage() {
   const router = useRouter();
