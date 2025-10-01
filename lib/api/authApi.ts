@@ -1,5 +1,5 @@
 // lib/api/authApi.ts
-import ApiClient from '../apiClient';
+import ApiClient from "../apiClient";
 
 export type SignInResponse = {
   token: string;
@@ -17,7 +17,7 @@ const AuthApi = {
     screenName: string;
   }): Promise<SignInResponse> => {
     try {
-      const response = await ApiClient.post('/apple_signin', {
+      const response = await ApiClient.post("/apple_signin", {
         uid,
         email,
         screen_name: screenName,
@@ -43,7 +43,7 @@ const AuthApi = {
     screenName: string;
   }): Promise<SignInResponse> => {
     try {
-      const response = await ApiClient.post('/phone_number_signin', {
+      const response = await ApiClient.post("/phone_number_signin", {
         uid,
         email,
         screen_name: screenName,
@@ -61,7 +61,7 @@ const AuthApi = {
 
   logout: async (): Promise<void> => {
     try {
-      await ApiClient.post('/logout', {});
+      await ApiClient.post("/logout", {});
     } catch (e) {
       // Silent fail
     }
@@ -70,7 +70,7 @@ const AuthApi = {
 
   delete: async (): Promise<void> => {
     try {
-      await ApiClient.post('/me/delete', {});
+      await ApiClient.post("/me/delete", {});
     } catch (e) {
       // Silent fail
     }

@@ -28,15 +28,11 @@ export default function PhoneNumberInput() {
     if (typeof window === "undefined") return;
 
     if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-          auth,
-          'recaptcha-container',
-          {
-            size: 'invisible',
-            siteKey: '6LfK4nMrAAAAAPPXJzeC2-lpyikjS7UPb9VWsQYv',
-            callback: () => console.log('reCAPTCHA solved'),
-          }
-        );
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+        size: "invisible",
+        siteKey: "6LfK4nMrAAAAAPPXJzeC2-lpyikjS7UPb9VWsQYv",
+        callback: () => console.log("reCAPTCHA solved"),
+      });
 
       window.recaptchaVerifier.render().catch(console.error);
     }
@@ -99,7 +95,9 @@ export default function PhoneNumberInput() {
       if (error.code === "auth/too-many-requests") {
         setError("リクエストが多すぎます。しばらく待ってからもう一度お試しください。");
       } else if (error.code === "auth/invalid-app-credential") {
-        setError("アプリの認証情報が無効です。Firebase Consoleでlocalhostが許可されているか確認してください。");
+        setError(
+          "アプリの認証情報が無効です。Firebase Consoleでlocalhostが許可されているか確認してください。"
+        );
       } else if (error.code === "auth/invalid-phone-number") {
         setError("無効な電話番号です。正しい番号を入力してください。");
       } else if (error.code === "auth/captcha-check-failed") {
@@ -171,7 +169,9 @@ export default function PhoneNumberInput() {
               </div>
             </div>
             {phoneNumber && !isValid && (
-              <p className="text-sm text-red-600 mt-2 animate-shake">有効な電話番号を入力してください</p>
+              <p className="text-sm text-red-600 mt-2 animate-shake">
+                有効な電話番号を入力してください
+              </p>
             )}
             {phoneNumber && isValid && (
               <p className="text-sm text-green-600 mt-2 animate-fade-in">✓ 有効な電話番号</p>

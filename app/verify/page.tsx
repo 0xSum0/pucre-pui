@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Image from 'next/image';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Check, RefreshCw } from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Check, RefreshCw } from "lucide-react";
 
 //declare global {
 //  interface Window {
@@ -17,15 +17,15 @@ import { ArrowLeft, Check, RefreshCw } from 'lucide-react';
 export default function VerifyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const phoneNumber = searchParams.get('phone') || '';
-  
-  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const phoneNumber = searchParams.get("phone") || "";
+
+  const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [isComplete, setIsComplete] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
-  
+
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Countdown timer for resend
@@ -43,21 +43,21 @@ export default function VerifyPage() {
 
   const handleInputChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return; // Only allow digits
-    
+
     const newCode = [...code];
     newCode[index] = value.slice(-1); // Only take the last digit
     setCode(newCode);
-    setError('');
-    
+    setError("");
+
     // Auto-focus next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
-    
+
     // Check if code is complete
-    const isComplete = newCode.every(digit => digit !== '');
+    const isComplete = newCode.every((digit) => digit !== "");
     setIsComplete(isComplete);
-    
+
     // Auto-verify when complete
     if (isComplete) {
       setTimeout(() => handleVerify(newCode), 300);
@@ -65,26 +65,26 @@ export default function VerifyPage() {
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !code[index] && index > 0) {
+    if (e.key === "Backspace" && !code[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     const newCode = [...code];
-    
+
     for (let i = 0; i < pastedData.length; i++) {
       newCode[i] = pastedData[i];
     }
-    
+
     setCode(newCode);
-    setError('');
-    
-    const isComplete = newCode.every(digit => digit !== '');
+    setError("");
+
+    const isComplete = newCode.every((digit) => digit !== "");
     setIsComplete(isComplete);
-    
+
     if (isComplete) {
       setTimeout(() => handleVerify(newCode), 300);
     }
@@ -92,41 +92,40 @@ export default function VerifyPage() {
 
   const handleVerify = async (codeToVerify = code) => {
     setIsVerifying(true);
-    setError('');
-    
+    setError("");
+
     try {
-      const codeString = codeToVerify.join('');
-      
+      const codeString = codeToVerify.join("");
+
       if (!window.confirmationResult) {
-        throw new Error('認証情報が見つかりません');
+        throw new Error("認証情報が見つかりません");
       }
-      
+
       // Use the confirm method from your working code
       await window.confirmationResult.confirm(codeString);
-      
+
       // Success
       setIsVerified(true);
       setIsVerifying(false);
-      
+
       // Redirect after 3 seconds
       setTimeout(() => {
-        window.location.href = 'https://pui.onelink.me/kFYQ/pucreauth';
+        window.location.href = "https://pui.onelink.me/kFYQ/pucreauth";
       }, 3000);
-      
     } catch (error: any) {
-      console.error('Verification error:', error);
-      
-      if (error.code === 'auth/invalid-verification-code') {
-        setError('認証コードが正しくありません');
-      } else if (error.code === 'auth/code-expired') {
-        setError('認証コードの有効期限が切れています');
+      console.error("Verification error:", error);
+
+      if (error.code === "auth/invalid-verification-code") {
+        setError("認証コードが正しくありません");
+      } else if (error.code === "auth/code-expired") {
+        setError("認証コードの有効期限が切れています");
       } else {
-        setError('認証に失敗しました。もう一度お試しください。');
+        setError("認証に失敗しました。もう一度お試しください。");
       }
-      
+
       setIsVerifying(false);
       // Clear the code and focus first input
-      setCode(['', '', '', '', '', '']);
+      setCode(["", "", "", "", "", ""]);
       setIsComplete(false);
       inputRefs.current[0]?.focus();
     }
@@ -134,35 +133,34 @@ export default function VerifyPage() {
 
   const handleResend = async () => {
     setResendCooldown(60);
-    setError('');
-    
+    setError("");
+
     // Convert to raw phone number for Firebase
-    const digits = phoneNumber.replace(/\D/g, '');
-    const fullPhone = '+81' + digits;
-    
+    const digits = phoneNumber.replace(/\D/g, "");
+    const fullPhone = "+81" + digits;
+
     try {
       // Setup reCAPTCHA verifier for resend (simpler approach)
       if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(
-          auth,
-          'recaptcha-container-resend',
-          {
-            size: 'invisible'
-          }
-        );
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container-resend", {
+          size: "invisible",
+        });
       }
-      
+
       // Resend SMS
-      const confirmationResult = await signInWithPhoneNumber(auth, fullPhone, window.recaptchaVerifier);
-      
+      const confirmationResult = await signInWithPhoneNumber(
+        auth,
+        fullPhone,
+        window.recaptchaVerifier
+      );
+
       // Store confirmation result on window object
       window.confirmationResult = confirmationResult;
-      
     } catch (error: any) {
-      console.error('Error resending SMS:', error);
-      setError('SMS再送信に失敗しました');
+      console.error("Error resending SMS:", error);
+      setError("SMS再送信に失敗しました");
       setResendCooldown(0);
-      
+
       // Reset reCAPTCHA on error
       window.recaptchaVerifier?.clear();
       window.recaptchaVerifier = undefined as any;
@@ -186,12 +184,12 @@ export default function VerifyPage() {
             <div className="space-y-3">
               <h2 className="text-2xl font-bold text-gray-900">認証完了！</h2>
               <p className="text-gray-600">
-                アプリに移動しています<br />
+                アプリに移動しています
+                <br />
                 <span className="text-red-600 font-semibold">このページを閉じないでください</span>
               </p>
             </div>
-            <div className="w-12 h-1 bg-blue-600 rounded-full mx-auto animate-pulse">
-            </div>
+            <div className="w-12 h-1 bg-blue-600 rounded-full mx-auto animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -217,7 +215,8 @@ export default function VerifyPage() {
         <div className="text-center space-y-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900">認証コードを入力</h2>
           <p className="text-base text-gray-600">
-            {phoneNumber} に送信された<br />
+            {phoneNumber} に送信された
+            <br />
             6桁のコードを入力してください
           </p>
         </div>
@@ -238,10 +237,10 @@ export default function VerifyPage() {
                 onPaste={index === 0 ? handlePaste : undefined}
                 className={`w-12 h-14 text-center text-xl font-bold border-2 rounded-xl transition-all duration-200 ${
                   digit
-                    ? 'border-blue-500 bg-blue-50 text-blue-900'
+                    ? "border-blue-500 bg-blue-50 text-blue-900"
                     : error
-                    ? 'border-red-400 bg-red-50 animate-shake'
-                    : 'border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:bg-blue-50'
+                      ? "border-red-400 bg-red-50 animate-shake"
+                      : "border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:bg-blue-50"
                 } focus:outline-none focus:ring-0`}
                 disabled={isVerifying}
               />
@@ -249,11 +248,7 @@ export default function VerifyPage() {
           </div>
 
           {/* Error Message */}
-          {error && (
-            <p className="text-sm text-red-600 text-center animate-fade-in">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-sm text-red-600 text-center animate-fade-in">{error}</p>}
 
           {/* Loading State */}
           {isVerifying && (
@@ -267,9 +262,7 @@ export default function VerifyPage() {
           <div className="text-center">
             <div id="recaptcha-container-resend"></div>
             {resendCooldown > 0 ? (
-              <p className="text-sm text-gray-500">
-                {resendCooldown}秒後に再送信できます
-              </p>
+              <p className="text-sm text-gray-500">{resendCooldown}秒後に再送信できます</p>
             ) : (
               <Button
                 variant="ghost"
@@ -287,7 +280,8 @@ export default function VerifyPage() {
         {/* Help Text */}
         <div className="mt-8 text-center">
           <p className="text-xs text-gray-500">
-            コードが届かない場合は、迷惑メールフォルダを<br />
+            コードが届かない場合は、迷惑メールフォルダを
+            <br />
             確認するか、しばらく待ってから再送信してください
           </p>
         </div>
