@@ -232,7 +232,7 @@ export default function VerifyPage() {
                       // Button の type を指定する必要があれば追加
                     >
                       <Check className="w-5 h-5 text-white" />
-                      <span>アプリに戻る</span>
+                      <span>タップして連携完了</span>
                     </Button>
                   </a>
                 ) : (
