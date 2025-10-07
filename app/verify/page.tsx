@@ -27,6 +27,8 @@ export default function VerifyPage() {
   const [error, setError] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
 
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
+
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Countdown timer for resend
@@ -123,10 +125,12 @@ export default function VerifyPage() {
         user.uid
       )}&token=${encodeURIComponent(apiResponse.token)}`;
 
+      setRedirectUrl(redirectUrl);
+
       // Redirect after 3 seconds
-      setTimeout(() => {
-        window.location.href = redirectUrl;
-      }, 3000);
+      // setTimeout(() => {
+      //   window.location.href = redirectUrl;
+      // }, 3000);
     } catch (error: any) {
       console.error("Verification error:", error);
 
@@ -183,6 +187,13 @@ export default function VerifyPage() {
   };
 
   if (isVerified) {
+    const openAppNow = () => {
+      if (redirectUrl) {
+        // ユーザー操作なので Universal Link を正しく開ける可能性が高い
+        window.location.href = redirectUrl;
+      }
+    };
+
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="w-full max-w-md mx-auto">
@@ -205,6 +216,12 @@ export default function VerifyPage() {
               </p>
             </div>
             <div className="w-12 h-1 bg-blue-600 rounded-full mx-auto animate-pulse"></div>
+
+            <div className="mt-4">
+              <Button onClick={openAppNow} className="w-full">
+                アプリに戻る
+              </Button>
+            </div>
           </div>
         </div>
       </div>
