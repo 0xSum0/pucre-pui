@@ -113,7 +113,7 @@ export default function VerifyPage() {
 
       const apiResponse = await AuthApi.phoneNumberSignIn({
         uid: user.uid,
-        email: user.phoneNumber || "",
+        email: "",
         screenName: "",
       });
 
