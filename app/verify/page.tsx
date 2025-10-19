@@ -3,13 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import {
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  PhoneAuthProvider,
-  signInWithCredential,
-} from "firebase/auth";
-
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, RefreshCw } from "lucide-react";
@@ -106,21 +100,12 @@ export default function VerifyPage() {
     try {
       const codeString = codeToVerify.join("");
 
-    let result;
-    if (window.confirmationResult) {
-      result = await window.confirmationResult.confirm(codeString);
-    } else {
-      const verificationId = localStorage.getItem("verificationId");
-      if (!verificationId) throw new Error("認証情報が見つかりません");
-
-      const credential = PhoneAuthProvider.credential(verificationId, codeString);
-      result = await signInWithCredential(auth, credential);
-
-      // ✅ Remove after use (for security)
-      localStorage.removeItem("verificationId");
-    }
+      if (!window.confirmationResult) {
+        throw new Error("認証情報が見つかりません");
+      }
 
       // Use the confirm method from your working code
+      const result = await window.confirmationResult.confirm(codeString);
       const user = result.user; // Firebase user object
       const token = await user.getIdToken();
 
