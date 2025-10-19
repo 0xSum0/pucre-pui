@@ -83,9 +83,7 @@ export default function PhoneNumberInput() {
         window.recaptchaVerifier!
       );
       window.confirmationResult = confirmationResult;
-
-      localStorage.setItem("verificationId", confirmationResult.verificationId);
-
+      
       console.log("SMS sent successfully");
       setIsLoading(false);
       router.push(`/verify?phone=${encodeURIComponent(phoneNumber)}`);
