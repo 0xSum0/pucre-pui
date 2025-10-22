@@ -243,7 +243,7 @@ export default function VerifyPage() {
               <div className="mt-4 flex flex-col items-center">
                 {redirectUrl ? (
                   // Anchor を使うことでブラウザのネイティブ挙動（Universal Link）を活かせます
-                  <a href={redirectUrl} onClick={handleComplete} className="w-3/4" aria-label="Open app">
+                  <a href={redirectUrl} className="w-3/4" aria-label="Open app">
                     <Button
                       className="w-full h-14 text-lg font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors rounded-2xl flex items-center justify-center space-x-3"
                       // Button の type を指定する必要があれば追加
