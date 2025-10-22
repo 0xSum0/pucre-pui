@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { RecaptchaVerifier, signInWithPhoneNumber, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, RefreshCw } from "lucide-react";
@@ -43,6 +43,23 @@ export default function VerifyPage() {
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
+
+  const handleComplete = async (e: React.MouseEvent) => {
+    e.preventDefault(); // stop immediate navigation
+
+    try {
+      // Sign out first
+      await signOut(auth);
+      console.log("Signed out");
+
+      // Then redirect
+      window.location.href = redirectUrl!;
+    } catch (err) {
+      console.error("Sign-out error:", err);
+      // Fallback redirect anyway
+      window.location.href = redirectUrl!;
+    }
+  };
 
   const handleInputChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return; // Only allow digits
@@ -226,7 +243,7 @@ export default function VerifyPage() {
               <div className="mt-4 flex flex-col items-center">
                 {redirectUrl ? (
                   // Anchor を使うことでブラウザのネイティブ挙動（Universal Link）を活かせます
-                  <a href={redirectUrl} className="w-3/4" aria-label="Open app">
+                  <a href={redirectUrl} onClick={handleComplete} className="w-3/4" aria-label="Open app">
                     <Button
                       className="w-full h-14 text-lg font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors rounded-2xl flex items-center justify-center space-x-3"
                       // Button の type を指定する必要があれば追加
