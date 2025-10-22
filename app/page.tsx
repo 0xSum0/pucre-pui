@@ -9,13 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, ArrowRight } from "lucide-react";
 
-declare global {
-  interface Window {
-    //recaptchaVerifier: RecaptchaVerifier;
-    //confirmationResult: import("firebase/auth").ConfirmationResult;
-  }
-}
-
 export default function PhoneNumberInput() {
   const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState("");

@@ -3,17 +3,17 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { RecaptchaVerifier, signInWithPhoneNumber, signOut } from "firebase/auth";
+import {
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  signInWithCredential,
+  PhoneAuthProvider,
+  signOut,
+} from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, RefreshCw } from "lucide-react";
 import AuthApi from "@/lib/api/authApi";
-
-//declare global {
-//  interface Window {
-//    confirmationResult: import("firebase/auth").ConfirmationResult;
-//  }
-//}
 
 export default function VerifyPage() {
   const router = useRouter();
@@ -26,12 +26,13 @@ export default function VerifyPage() {
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
-
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Countdown timer for resend
+  // --- EFFECTS ---
+
+  // Resend cooldown countdown
   useEffect(() => {
     if (resendCooldown > 0) {
       const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
@@ -39,49 +40,37 @@ export default function VerifyPage() {
     }
   }, [resendCooldown]);
 
-  // Auto-focus first input on mount
+  // Auto-focus first input
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
 
-  const handleComplete = async (e: React.MouseEvent) => {
-    e.preventDefault(); // stop immediate navigation
+  // --- HANDLERS ---
 
+  const handleComplete = async (e: React.MouseEvent) => {
+    e.preventDefault();
     try {
-      // Sign out first
       await signOut(auth);
       console.log("Signed out");
-
-      // Then redirect
-      window.location.href = redirectUrl!;
     } catch (err) {
       console.error("Sign-out error:", err);
-      // Fallback redirect anyway
-      window.location.href = redirectUrl!;
+    } finally {
+      if (redirectUrl) window.location.href = redirectUrl;
     }
   };
 
   const handleInputChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return; // Only allow digits
-
+    if (!/^\d*$/.test(value)) return;
     const newCode = [...code];
-    newCode[index] = value.slice(-1); // Only take the last digit
+    newCode[index] = value.slice(-1);
     setCode(newCode);
     setError("");
 
-    // Auto-focus next input
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
+    if (value && index < 5) inputRefs.current[index + 1]?.focus();
 
-    // Check if code is complete
-    const isComplete = newCode.every((digit) => digit !== "");
-    setIsComplete(isComplete);
-
-    // Auto-verify when complete
-    if (isComplete) {
-      setTimeout(() => handleVerify(newCode), 300);
-    }
+    const complete = newCode.every((d) => d !== "");
+    setIsComplete(complete);
+    if (complete) setTimeout(() => handleVerify(newCode), 300);
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
@@ -92,41 +81,36 @@ export default function VerifyPage() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    const newCode = [...code];
-
-    for (let i = 0; i < pastedData.length; i++) {
-      newCode[i] = pastedData[i];
-    }
-
-    setCode(newCode);
-    setError("");
-
-    const isComplete = newCode.every((digit) => digit !== "");
-    setIsComplete(isComplete);
-
-    if (isComplete) {
-      setTimeout(() => handleVerify(newCode), 300);
-    }
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const arr = [...code];
+    for (let i = 0; i < pasted.length; i++) arr[i] = pasted[i];
+    setCode(arr);
+    const complete = arr.every((d) => d !== "");
+    setIsComplete(complete);
+    if (complete) setTimeout(() => handleVerify(arr), 300);
   };
 
+  // 🔐 Step 3: Verify using signInWithCredential
   const handleVerify = async (codeToVerify = code) => {
     setIsVerifying(true);
     setError("");
 
     try {
-      const codeString = codeToVerify.join("");
+      const codeStr = codeToVerify.join("");
+      const verificationId =
+        localStorage.getItem("verificationId") || window.verificationId;
 
-      if (!window.confirmationResult) {
-        throw new Error("認証情報が見つかりません");
-      }
+      if (!verificationId) throw new Error("認証情報が見つかりません");
 
-      // Use the confirm method from your working code
-      const result = await window.confirmationResult.confirm(codeString);
-      const user = result.user; // Firebase user object
-      const token = await user.getIdToken();
+      // Reconstruct credential
+      const credential = PhoneAuthProvider.credential(verificationId, codeStr);
 
-      console.log("✅ Firebase sign-in successful:", user.uid, user.email);
+      // Complete sign-in
+      const result = await signInWithCredential(auth, credential);
+      const user = result.user;
+      const token = await user.getIdToken(true);
+
+      console.log("✅ Firebase sign-in successful:", user.uid);
 
       const apiResponse = await AuthApi.phoneNumberSignIn({
         uid: user.uid,
@@ -134,23 +118,15 @@ export default function VerifyPage() {
         screenName: "",
       });
 
-      // Success
-      setIsVerified(true);
-      setIsVerifying(false);
-
-      const redirectUrl = `https://pui.onelink.me/kFYQ/pucreauth?uid=${encodeURIComponent(
+      const redirect = `https://pui.onelink.me/kFYQ/pucreauth?uid=${encodeURIComponent(
         user.uid
       )}&token=${encodeURIComponent(apiResponse.token)}`;
 
-      setRedirectUrl(redirectUrl);
-
-      // Redirect after 3 seconds
-      // setTimeout(() => {
-      //   window.location.href = redirectUrl;
-      // }, 3000);
+      setRedirectUrl(redirect);
+      setIsVerified(true);
+      setIsVerifying(false);
     } catch (error: any) {
       console.error("Verification error:", error);
-
       if (error.code === "auth/invalid-verification-code") {
         setError("認証コードが正しくありません");
       } else if (error.code === "auth/code-expired") {
@@ -158,118 +134,86 @@ export default function VerifyPage() {
       } else {
         setError("認証に失敗しました。もう一度お試しください。");
       }
-
       setIsVerifying(false);
-      // Clear the code and focus first input
       setCode(["", "", "", "", "", ""]);
       setIsComplete(false);
       inputRefs.current[0]?.focus();
     }
   };
 
+  // 🔁 Step 2: Resend SMS (stores new verificationId)
   const handleResend = async () => {
     setResendCooldown(60);
     setError("");
-
-    // Convert to raw phone number for Firebase
     const digits = phoneNumber.replace(/\D/g, "");
     const fullPhone = "+81" + digits;
 
     try {
-      // Setup reCAPTCHA verifier for resend (simpler approach)
       if (!window.recaptchaVerifier) {
         window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container-resend", {
           size: "invisible",
         });
       }
 
-      // Resend SMS
       const confirmationResult = await signInWithPhoneNumber(
         auth,
         fullPhone,
         window.recaptchaVerifier
       );
 
-      // Store confirmation result on window object
-      window.confirmationResult = confirmationResult;
+      // Save verificationId
+      localStorage.setItem("verificationId", confirmationResult.verificationId);
+      window.verificationId = confirmationResult.verificationId;
+
+      console.log("📩 SMS resent successfully");
     } catch (error: any) {
       console.error("Error resending SMS:", error);
       setError("SMS再送信に失敗しました");
       setResendCooldown(0);
-
-      // Reset reCAPTCHA on error
       window.recaptchaVerifier?.clear();
       window.recaptchaVerifier = undefined as any;
     }
   };
 
+  // --- VERIFIED UI ---
   if (isVerified) {
-    const openAppNow = () => {
-      if (redirectUrl) {
-        // ユーザー操作なので Universal Link を正しく開ける可能性が高い
-        window.location.href = redirectUrl;
-      }
-    };
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="w-full max-w-md mx-auto text-center space-y-6">
+          <div className="w-24 h-24 mx-auto">
+            <Image
+              src="/images/character.png"
+              alt="Character"
+              width={96}
+              height={96}
+              className="w-full h-full object-contain"
+            />
+          </div>
 
-    if (isVerified) {
-      // openAppNow はもう不要（アンカーを使うため）
-      return (
-        <div className="min-h-screen bg-white flex items-center justify-center p-4">
-          <div className="w-full max-w-md mx-auto">
-            <div className="text-center space-y-6">
-              <div className="w-24 h-24 mx-auto">
-                <Image
-                  src="/images/character.png"
-                  alt="Character"
-                  width={96}
-                  height={96}
-                  className="w-full h-full object-contain"
-                />
-              </div>
+          <h2 className="text-2xl font-bold text-gray-900">認証完了！</h2>
 
-              <div className="space-y-3">
-                <h2 className="text-2xl font-bold text-gray-900">認証完了！</h2>
-                {/*
-                <p className="text-gray-600">
-                  アプリに移動しています
-                  <br />
-                  <span className="text-red-600 font-semibold">このページを閉じないでください</span>
-                </p>
-                */}
-              </div>
+          <div className="w-12 h-1 bg-blue-600 rounded-full mx-auto animate-pulse" />
 
-              <div className="w-12 h-1 bg-blue-600 rounded-full mx-auto animate-pulse"></div>
-
-              <div className="mt-4 flex flex-col items-center">
-                {redirectUrl ? (
-                  // Anchor を使うことでブラウザのネイティブ挙動（Universal Link）を活かせます
-                  <a href={redirectUrl} className="w-3/4" aria-label="Open app">
-                    <Button
-                      className="w-full h-14 text-lg font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors rounded-2xl flex items-center justify-center space-x-3"
-                      // Button の type を指定する必要があれば追加
-                    >
-                      <Check className="w-5 h-5 text-white" />
-                      <span>タップして連携完了</span>
-                    </Button>
-                  </a>
-                ) : (
-                  <div className="w-3/4">
-                    <Button
-                      className="w-full h-14 text-lg font-semibold bg-blue-600 disabled:bg-gray-300 rounded-2xl"
-                      disabled
-                    >
-                      読み込み中...
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="mt-4 flex flex-col items-center">
+            {redirectUrl ? (
+              <a href={redirectUrl} onClick={handleComplete} className="w-3/4">
+                <Button className="w-full h-14 text-lg font-semibold bg-blue-600 hover:bg-blue-700 rounded-2xl flex items-center justify-center space-x-3">
+                  <Check className="w-5 h-5 text-white" />
+                  <span>タップして連携完了</span>
+                </Button>
+              </a>
+            ) : (
+              <Button disabled className="w-3/4 h-14 text-lg font-semibold bg-gray-300 rounded-2xl">
+                読み込み中...
+              </Button>
+            )}
           </div>
         </div>
-      );
-    }
+      </div>
+    );
   }
 
+  // --- DEFAULT (INPUT) UI ---
   return (
     <div className="min-h-screen bg-white p-4 pt-8">
       <div className="w-full max-w-md mx-auto">
@@ -313,18 +257,16 @@ export default function VerifyPage() {
                   digit
                     ? "border-blue-500 bg-blue-50 text-blue-900"
                     : error
-                      ? "border-red-400 bg-red-50 animate-shake"
-                      : "border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:bg-blue-50"
+                    ? "border-red-400 bg-red-50 animate-shake"
+                    : "border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:bg-blue-50"
                 } focus:outline-none focus:ring-0`}
                 disabled={isVerifying}
               />
             ))}
           </div>
 
-          {/* Error Message */}
           {error && <p className="text-sm text-red-600 text-center animate-fade-in">{error}</p>}
 
-          {/* Loading State */}
           {isVerifying && (
             <div className="flex items-center justify-center space-x-2 text-blue-600">
               <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -332,7 +274,7 @@ export default function VerifyPage() {
             </div>
           )}
 
-          {/* Resend Button */}
+          {/* Resend */}
           <div className="text-center">
             <div id="recaptcha-container-resend"></div>
             {resendCooldown > 0 ? (
@@ -351,13 +293,9 @@ export default function VerifyPage() {
           </div>
         </div>
 
-        {/* Help Text */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">
-            コードが届かない場合は、迷惑メールフォルダを
-            <br />
-            確認するか、しばらく待ってから再送信してください
-          </p>
+        <div className="mt-8 text-center text-xs text-gray-500">
+          コードが届かない場合は、迷惑メールフォルダを確認するか、<br />
+          しばらく待ってから再送信してください
         </div>
       </div>
     </div>
