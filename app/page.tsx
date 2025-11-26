@@ -30,7 +30,8 @@ export default function PhoneNumberInput() {
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
         size: "invisible",
-        siteKey: "6LfK4nMrAAAAAPPXJzeC2-lpyikjS7UPb9VWsQYv",
+        // siteKey: "6LfK4nMrAAAAAPPXJzeC2-lpyikjS7UPb9VWsQYv",
+        siteKey: "6Lc3bBgsAAAAAAjLslaITyw5zphd5hdK8RckX1wx",
         callback: () => console.log("reCAPTCHA solved"),
       });
 
