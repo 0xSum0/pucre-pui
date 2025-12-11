@@ -19,6 +19,19 @@ export default function AuthSuccessPage() {
     }
   }, []);
 
+  if (!redirectUrl) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="w-full max-w-md mx-auto">
+          <div className="text-center space-y-6">
+            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-gray-600">読み込み中...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="w-full max-w-md mx-auto">
@@ -40,23 +53,12 @@ export default function AuthSuccessPage() {
           <div className="w-12 h-1 bg-blue-600 rounded-full mx-auto animate-pulse"></div>
 
           <div className="mt-4 flex flex-col items-center">
-            {redirectUrl ? (
-              <a href={redirectUrl} className="w-3/4" aria-label="Open app">
-                <Button className="w-full h-14 text-lg font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors rounded-2xl flex items-center justify-center space-x-3">
-                  <Check className="w-5 h-5 text-white" />
-                  <span>タップして連携完了</span>
-                </Button>
-              </a>
-            ) : (
-              <div className="w-3/4">
-                <Button
-                  className="w-full h-14 text-lg font-semibold bg-blue-600 disabled:bg-gray-300 rounded-2xl"
-                  disabled
-                >
-                  読み込み中...
-                </Button>
-              </div>
-            )}
+            <a href={redirectUrl} className="w-3/4" aria-label="Open app">
+              <Button className="w-full h-14 text-lg font-semibold bg-blue-600 hover:bg-blue-700 transition-colors rounded-2xl flex items-center justify-center space-x-3">
+                <Check className="w-5 h-5 text-white" />
+                <span>タップして連携完了</span>
+              </Button>
+            </a>
           </div>
         </div>
       </div>
