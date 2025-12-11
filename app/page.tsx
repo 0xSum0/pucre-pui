@@ -14,7 +14,7 @@ export default function AuthSuccessPage() {
     const code = params.get('code');
     
     if (code) {
-      const url = `https://pui.onelink.me/kFYQ/code=${code}`;
+      const url = `https://pui.onelink.me/kFYQ/?code=${code}`;
       setRedirectUrl(url);
     }
   }, []);
